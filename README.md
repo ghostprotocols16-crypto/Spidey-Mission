@@ -13,15 +13,20 @@ npm i
 npm run dev
 ```
 
-## Email setup
+## Deployment
 
-To send real emails, set either Gmail SMTP credentials or a Resend API key:
+This app is a TanStack Start SSR app, so it must be deployed on a runtime that supports Nitro/Vercel server functions.
 
-```env
-GMAIL_USER=your_email@gmail.com
-GMAIL_APP_PASSWORD=your_app_password
-RESEND_API_KEY=your_resend_api_key_here
-```
+If you deploy to Vercel:
+
+- Keep the project root at the repository root.
+- Use `npm run build` as the build command.
+- Do not deploy it as a static-only site.
+- Add the production environment variables in the Vercel project settings:
+	- `GMAIL_USER`
+	- `GMAIL_APP_PASSWORD`
+
+The repo includes `nitro.config.ts` with the `vercel` preset so Vercel can detect the correct runtime.
 
 ## Built with
 
