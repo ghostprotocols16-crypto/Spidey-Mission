@@ -44,7 +44,14 @@ export function Skyline({ className = "" }: { className?: string }) {
         transition={{ duration: 14, repeat: Infinity, ease: "easeInOut", delay: 2 }}
       >
         <line x1="80" y1="0" x2="80" y2="60" stroke="oklch(0.955 0.028 82 / 0.5)" strokeWidth="1" />
-        <circle cx="80" cy="70" r="6" fill="oklch(0.52 0.17 27)" stroke="oklch(0.14 0.02 40)" strokeWidth="1" />
+        <circle
+          cx="80"
+          cy="70"
+          r="6"
+          fill="oklch(0.52 0.17 27)"
+          stroke="oklch(0.14 0.02 40)"
+          strokeWidth="1"
+        />
       </motion.g>
     </svg>
   );

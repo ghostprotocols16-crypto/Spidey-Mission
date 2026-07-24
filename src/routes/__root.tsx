@@ -11,7 +11,6 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 
-
 function NotFoundComponent() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -79,9 +78,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Brand New Day — A Mission Brief" },
-      { name: "description", content: "Spider-Man: Brand New Day is almost here. Want to team up for the mission?" },
+      {
+        name: "description",
+        content: "Spider-Man: Brand New Day is almost here. Want to team up for the mission?",
+      },
       { property: "og:title", content: "Brand New Day — A Mission Brief" },
-      { property: "og:description", content: "A cinematic invite to see Spider-Man: Brand New Day together." },
+      {
+        property: "og:description",
+        content: "A cinematic invite to see Spider-Man: Brand New Day together.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
