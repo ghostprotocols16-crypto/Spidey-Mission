@@ -572,7 +572,7 @@ function RegistrationPage({ onSubmit }: { onSubmit: (d: FormData) => void }) {
                 validate: (value) =>
                   /^\d{10}$/.test(String(value ?? "")) || "Enter exactly 10 digits.",
               })}
-              placeholder="Enter 10 digits only"
+              placeholder="I guess it sounds like +91 9881198049"
               className="w-full rounded-lg border-2 border-ink bg-cream/80 px-4 py-3 outline-none focus:ring-2 focus:ring-primary"
             />
           </Field>
