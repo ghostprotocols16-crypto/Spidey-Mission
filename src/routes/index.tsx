@@ -5,6 +5,9 @@ import { useForm } from "react-hook-form";
 import { SpideySwinger, SpiderIcon, WebCorner } from "@/components/spidey";
 import { CursorWebTrail } from "@/components/cursor-web";
 import { Skyline } from "@/components/skyline";
+import { createServerFn } from "@tanstack/react-start";
+import nodemailer from "nodemailer";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -31,12 +34,53 @@ interface FormData {
 function Index() {
   const [stage, setStage] = useState<Stage>("story");
   const [confirmed, setConfirmed] = useState<FormData | null>(null);
+  const [swingCount, setSwingCount] = useState(0);
+  const [swingConfig, setSwingConfig] = useState({
+    direction: "left" as "left" | "right",
+    startY: "15vh",
+    endY: "35vh",
+    duration: 2.4,
+  });
+
+  useEffect(() => {
+    // Trigger swinging Spidey animation across all pages every 7 seconds
+    const interval = setInterval(() => {
+      setSwingCount((prev) => prev + 1);
+      setSwingConfig({
+        direction: Math.random() > 0.5 ? "left" : "right",
+        startY: `${Math.random() * 20 + 5}vh`, // Random start Y (5vh to 25vh)
+        endY: `${Math.random() * 20 + 25}vh`,  // Random end Y (25vh to 45vh)
+        duration: Math.random() * 0.8 + 2.0,   // Random duration (2.0s to 2.8s)
+      });
+    }, 7000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
       <CursorWebTrail />
       <CornerWebs />
       <CrawlingSpiders />
+
+      {/* Global swinging Spidey animation from random directions every 7 seconds */}
+      <motion.div
+        key={`global-swinging-spidey-${swingCount}`}
+        initial={{
+          x: swingConfig.direction === "left" ? "-40vw" : "115vw",
+          y: swingConfig.startY,
+          rotate: swingConfig.direction === "left" ? -25 : 25,
+          scaleX: swingConfig.direction === "left" ? 1 : -1,
+        }}
+        animate={{
+          x: swingConfig.direction === "left" ? "115vw" : "-40vw",
+          y: swingConfig.endY,
+          rotate: swingConfig.direction === "left" ? 15 : -15,
+        }}
+        transition={{ duration: swingConfig.duration, ease: "easeInOut" }}
+        className="pointer-events-none fixed left-0 top-0 z-50 h-64 w-48"
+      >
+        <SpideySwinger className="h-full w-full" />
+      </motion.div>
 
       <AnimatePresence mode="wait">
         {stage === "story" && (
@@ -137,7 +181,7 @@ function Hero() {
         <SpideySwinger className="h-full w-full drop-shadow-[6px_6px_0_oklch(0.14_0.02_40)]" />
       </motion.div>
 
-      <motion.div style={{ y: titleY }} className="relative z-30 max-w-4xl text-center">
+      <motion.div style={{ y: titleY }} className="relative z-30 max-w-4xl -mt-28 text-center md:-mt-40">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -156,7 +200,7 @@ function Hero() {
         >
           A <span className="text-primary">Brand New Day</span>
           <br /> deserves a pretty
-          <br /> good teammate.
+          <br /> <span className="inline-block -translate-y-2 md:-translate-y-4">good teammate.</span>
         </motion.h1>
         <motion.p
           initial={{ opacity: 0, y: 20 }}
@@ -309,14 +353,10 @@ function MissionCard({ onAccept }: { onAccept: () => void }) {
     const card = cardRef.current;
     const btn = nopeRef.current;
     if (!card || !btn) return;
-    const cw = card.clientWidth;
-    const ch = card.clientHeight;
-    const bw = btn.offsetWidth;
-    const bh = btn.offsetHeight;
-    const maxX = cw - bw - 40;
-    const maxY = ch - bh - 40;
-    const x = Math.random() * maxX - cw / 2 + bw / 2 + 20;
-    const y = Math.random() * (maxY - 100) + 20;
+
+    // Use bounded translation offsets relative to center so the button never leaves the card area
+    const x = (Math.random() - 0.5) * 280; // -140px to +140px
+    const y = (Math.random() - 0.5) * 160; // -80px to +80px
     setNopePos({ x, y });
 
     const next = clicks + 1;
@@ -457,7 +497,7 @@ function RegistrationPage({ onSubmit }: { onSubmit: (d: FormData) => void }) {
           <h2 className="text-5xl text-ink md:text-6xl" style={{ fontFamily: "var(--font-display)" }}>
             Suit <span className="text-primary">Up</span>
           </h2>
-          <p className="mt-3 text-brown-deep">Every hero needs proper paperwork. Weird but true.</p>
+          <p className="mt-3 text-brown-deep">Great power comes with great... administrative tasks. Sorry.</p>
         </div>
 
         <form
@@ -467,7 +507,7 @@ function RegistrationPage({ onSubmit }: { onSubmit: (d: FormData) => void }) {
           <Field label="Name" error={errors.name?.message}>
             <input
               {...register("name", { required: "Even heroes need a name." })}
-              placeholder="Your Friendly Neighborhood Hero… (Maybe someone named Saina?)"
+              placeholder="(Maybe someone named Saina?)"
               className="w-full rounded-lg border-2 border-ink bg-cream/80 px-4 py-3 outline-none focus:ring-2 focus:ring-primary"
             />
           </Field>
@@ -475,7 +515,7 @@ function RegistrationPage({ onSubmit }: { onSubmit: (d: FormData) => void }) {
           <Field label="Mobile Number" error={errors.mobile?.message}>
             <input
               {...register("mobile", { required: "Spider-Signal needs a phone." })}
-              placeholder="Your secret Spider-Phone number… (I'll replace this with the real one 😉)"
+              placeholder="(similar to +91 9881198049)"
               className="w-full rounded-lg border-2 border-ink bg-cream/80 px-4 py-3 outline-none focus:ring-2 focus:ring-primary"
             />
           </Field>
@@ -484,7 +524,7 @@ function RegistrationPage({ onSubmit }: { onSubmit: (d: FormData) => void }) {
             <input
               type="email"
               {...register("email", { required: "Where do I send the mission?" })}
-              placeholder="Where should Spider-Man send the mission details?"
+              placeholder="Where should Spidey send the mission details?"
               className="w-full rounded-lg border-2 border-ink bg-cream/80 px-4 py-3 outline-none focus:ring-2 focus:ring-primary"
             />
           </Field>
@@ -563,30 +603,177 @@ function Field({
 
 /* ---------- Success / Ticket ---------- */
 
+/* ---------- Success / Ticket ---------- */
+
+/* ---------- Integration Helpers ---------- */
+
+const sendEmailFn = createServerFn({ method: "POST" })
+  .validator((d: { name: string; email: string; mobile: string; date: string }) => d)
+  .handler(async ({ data }) => {
+    const adminEmail = "jaisingpure.harsh08@gmail.com";
+    const gmailUser = process.env.GMAIL_USER ?? adminEmail;
+    const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+    const userEmail = data.email;
+    const userSubject = `🕷️ Mission Accepted: ${data.name} joined Brand New Day`;
+    const adminSubject = `🕷️ Mission Confirmation: ${data.name} submitted the form`;
+
+    const emailHtml = `
+      <div style="font-family: 'Courier New', Courier, monospace; max-width: 600px; margin: 0 auto; border: 3px solid #111; padding: 25px; background-color: #faf8f5; box-shadow: 8px 8px 0 #111;">
+        <h1 style="color: #e11d48; text-align: center; text-transform: uppercase; border-bottom: 2px dashed #111; padding-bottom: 15px; margin-top: 0;">
+          🕷️ MISSION BRIEFING ACCEPTED 🕸️
+        </h1>
+        <p style="font-size: 16px;">Attention Agents,</p>
+        <p style="font-size: 16px;">The recruit questionnaire has been received. S.H.I.E.L.D. Command has scheduled a collaborative screening operation:</p>
+        
+        <div style="background-color: #f1ede4; border: 2px solid #111; padding: 15px; margin: 20px 0; border-radius: 8px;">
+          <table style="width: 100%; font-size: 15px;">
+            <tr><td style="padding: 6px 0; font-weight: bold; width: 40%;">OPERATION:</td><td>Spider-Man: Brand New Day</td></tr>
+            <tr><td style="padding: 6px 0; font-weight: bold;">HOST AGENT:</td><td>Harsh</td></tr>
+            <tr><td style="padding: 6px 0; font-weight: bold;">PARTNER AGENT:</td><td>${data.name}</td></tr>
+            <tr><td style="padding: 6px 0; font-weight: bold;">RECRUIT EMAIL:</td><td>${data.email}</td></tr>
+            <tr><td style="padding: 6px 0; font-weight: bold;">CONTACT PHONE:</td><td>${data.mobile}</td></tr>
+            <tr><td style="padding: 6px 0; font-weight: bold;">MISSION DATE:</td><td>${data.date}</td></tr>
+            <tr><td style="padding: 6px 0; font-weight: bold;">SUPPLIES:</td><td>🍿 Compulsory Popcorn</td></tr>
+            <tr><td style="padding: 6px 0; font-weight: bold;">POST-MISSION:</td><td>🍝 Pasta / 🍔 Burger / 🍩 Donuts</td></tr>
+          </table>
+        </div>
+        
+        <p style="text-align: center; font-size: 16px; font-weight: bold; margin-top: 25px; color: #111;">
+          "A Brand New Day deserves a pretty good teammate."
+        </p>
+      </div>
+    `;
+
+    if (gmailUser && gmailAppPassword) {
+      try {
+        const transporter = nodemailer.createTransport({
+          service: "gmail",
+          auth: {
+            user: gmailUser,
+            pass: gmailAppPassword,
+          },
+        });
+
+        await transporter.sendMail({
+          from: `Spidey Invites <${adminEmail}>`,
+          to: userEmail,
+          subject: userSubject,
+          html: emailHtml,
+          replyTo: data.email,
+        });
+
+        await transporter.sendMail({
+          from: `Spidey Invites <${adminEmail}>`,
+          to: adminEmail,
+          subject: adminSubject,
+          html: emailHtml,
+          replyTo: data.email,
+        });
+
+        return { success: true, provider: "gmail" };
+      } catch (error) {
+        console.error("Gmail SMTP error:", error);
+        return { success: false, error: String(error) };
+      }
+    }
+
+    console.log("[EMAIL SIMULATION] Missing Gmail credentials. Email data:", {
+      to: userEmail,
+      adminTo: adminEmail,
+      userSubject,
+      adminSubject,
+      html: emailHtml,
+    });
+    return { success: false, missingCredentials: true };
+  });
+
+function getWhatsAppUrl(data: FormData) {
+  const adminNumber = "919529389244";
+  const date = data.day === "Custom Date" ? data.customDate || "TBD" : data.day;
+  const message = 
+    `🕷️ *MISSION BRIEFING ACCEPTED* 🕸️\n\n` +
+    `• *Agent:* ${data.name}\n` +
+    `• *Spider-Phone:* ${data.mobile}\n` +
+    `• *Email:* ${data.email}\n` +
+    `• *Preferred Day:* ${date}\n\n` +
+    `"A Brand New Day deserves a pretty good teammate." 🍿 Let's suit up, Harsh! 🎬`;
+  return `https://wa.me/${adminNumber}?text=${encodeURIComponent(message)}`;
+}
+
+function getGoogleCalendarUrl(data: FormData) {
+  const title = encodeURIComponent("🕷️ Spider-Man: Brand New Day Movie Mission");
+  let dateStr = "";
+  
+  if (data.day === "Custom Date" && data.customDate) {
+    const cleanDate = data.customDate.replace(/-/g, "");
+    dateStr = `${cleanDate}T180000/${cleanDate}T210000`; // 6 PM - 9 PM
+  } else {
+    const today = new Date();
+    const formattedToday = today.toISOString().split('T')[0].replace(/-/g, "");
+    dateStr = `${formattedToday}/${formattedToday}`;
+  }
+
+  const details = encodeURIComponent(
+    `Mission Briefing:\n` +
+    `-------------------\n` +
+    `Agent Host: Harsh\n` +
+    `Agent Partner: ${data.name}\n` +
+    `Spider-Phone: ${data.mobile}\n` +
+    `Email: ${data.email}\n` +
+    `Preferred Day: ${data.day === "Custom Date" ? data.customDate : data.day}\n\n` +
+    `🍿 Popcorn is compulsory. Sharing is optional!\n` +
+    `🎬 Movie & post-credits theory discussion.`
+  );
+
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${dateStr}&details=${details}`;
+}
+
+/* ---------- Success / Ticket ---------- */
+
 function SuccessScreen({ data }: { data: FormData }) {
   const [showTicket, setShowTicket] = useState(false);
+  
+  const date = data.day === "Custom Date" ? data.customDate || "TBD" : data.day;
+
   useEffect(() => {
     const t = setTimeout(() => setShowTicket(true), 1600);
     return () => clearTimeout(t);
   }, []);
 
-  const date = data.day === "Custom Date" ? data.customDate || "TBD" : data.day;
+  useEffect(() => {
+    if (!showTicket) return;
+
+    // Automatically trigger email sending to both recruit and Harsh (admin)
+    const triggerEmail = async () => {
+      try {
+        const res = await sendEmailFn({
+          data: {
+            name: data.name,
+            email: data.email,
+            mobile: data.mobile,
+            date: date,
+          }
+        });
+        if (res.success) {
+          toast.success("Mission briefing emailed to you, with Harsh copied in. Check your inbox or spam folder if you do not see it.");
+        } else if (res.missingCredentials) {
+          toast.error("Set GMAIL_USER and GMAIL_APP_PASSWORD to send the mission email.");
+        } else {
+          toast.error("Mission saved, but briefing email delivery failed.");
+        }
+      } catch (err) {
+        console.error("Email API failed:", err);
+      }
+    };
+    triggerEmail();
+
+  }, [showTicket, data, date]);
 
   return (
     <section className="relative min-h-screen px-6 py-20">
       {/* Confetti + SFX */}
       <Confetti />
       <SoundEffects />
-
-      {/* Spidey flying across */}
-      <motion.div
-        initial={{ x: "-30vw", y: "10vh", rotate: -25 }}
-        animate={{ x: "110vw", y: "30vh", rotate: 15 }}
-        transition={{ duration: 2, ease: "easeInOut" }}
-        className="pointer-events-none fixed left-0 top-0 z-40 h-64 w-48"
-      >
-        <SpideySwinger className="h-full w-full" />
-      </motion.div>
 
       <div className="mx-auto max-w-2xl text-center">
         <motion.h2
@@ -598,40 +785,68 @@ function SuccessScreen({ data }: { data: FormData }) {
         >
           Mission Accepted ✅
         </motion.h2>
+        <p className="mt-4 text-sm text-brown-deep">
+          Check your inbox, and if you do not see the email, please check the spam or junk folder.
+        </p>
 
         <AnimatePresence>
           {showTicket && (
-            <motion.div
-              initial={{ opacity: 0, y: 60, rotate: -6 }}
-              animate={{ opacity: 1, y: 0, rotate: -2 }}
-              transition={{ type: "spring", stiffness: 120, damping: 14 }}
-              className="comic-border newsprint relative mx-auto mt-12 max-w-xl overflow-hidden rounded-2xl p-8 text-left"
-            >
-              <div className="absolute inset-0 halftone opacity-15" />
-              <div className="relative">
-                <div className="flex items-center justify-between border-b-2 border-dashed border-ink pb-4">
-                  <div>
-                    <div className="text-xs uppercase tracking-widest text-brown-deep">Admit One</div>
-                    <div className="text-2xl text-ink" style={{ fontFamily: "var(--font-display)" }}>
-                      Daily Bugle Cinema
+            <div className="flex flex-col items-center">
+              <motion.div
+                initial={{ opacity: 0, y: 60, rotate: -6 }}
+                animate={{ opacity: 1, y: 0, rotate: -2 }}
+                transition={{ type: "spring", stiffness: 120, damping: 14 }}
+                className="comic-border newsprint relative mx-auto mt-12 max-w-xl overflow-hidden rounded-2xl p-8 text-left w-full"
+              >
+                <div className="absolute inset-0 halftone opacity-15" />
+                <div className="relative">
+                  <div className="flex items-center justify-between border-b-2 border-dashed border-ink pb-4">
+                    <div>
+                      <div className="text-xs uppercase tracking-widest text-primary font-bold tracking-[0.2em]">🕷️ S.H.I.E.L.D. MISSION PASS</div>
                     </div>
+                    <SpiderIcon className="h-10 w-10" />
                   </div>
-                  <SpiderIcon className="h-10 w-10" />
+
+                  <TicketRow k="Movie" v="Spider-Man: Brand New Day" />
+                  <TicketRow k="Mission Host" v="Harsh" />
+                  <TicketRow k="Mission Date" v={date} />
+                  <TicketRow k="Theatre" v="To be decided after discussion." />
+                  <TicketRow k="Show Time" v="To be decided after discussion." />
+                  <TicketRow k="Mission Snacks" v="🍿 Popcorn" />
+                  <TicketRow k="After Movie" v="🍝 Pasta · 🍔 Burger · 🍩 Donuts" />
+
+                  <p className="mt-6 border-t-2 border-dashed border-ink pt-4 text-center text-lg text-brown-deep" style={{ fontFamily: "var(--font-comic)" }}>
+                    Looking forward to an amazing Spider-Man day together.
+                  </p>
                 </div>
+              </motion.div>
 
-                <TicketRow k="Movie" v="Spider-Man: Brand New Day" />
-                <TicketRow k="Mission Partner" v={data.name || "Hero"} />
-                <TicketRow k="Mission Date" v={date} />
-                <TicketRow k="Theatre" v="To be decided after discussion." />
-                <TicketRow k="Show Time" v="To be decided after discussion." />
-                <TicketRow k="Mission Snacks" v="🍿 Popcorn" />
-                <TicketRow k="After Movie" v="🍝 Pasta · 🍔 Burger · 🍩 Donuts" />
-
-                <p className="mt-6 border-t-2 border-dashed border-ink pt-4 text-center text-lg text-brown-deep" style={{ fontFamily: "var(--font-comic)" }}>
-                  Looking forward to an amazing Spider-Man day together.
-                </p>
-              </div>
-            </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="mt-8 flex flex-col sm:flex-row justify-center gap-4 w-full max-w-xl"
+              >
+                <a
+                  href={getWhatsAppUrl(data)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="comic-border flex items-center justify-center gap-2 rounded-full bg-[#25D366] px-6 py-4 font-bold text-white hover:opacity-90 hover:scale-105 active:scale-95 transition-all duration-200 flex-1 cursor-pointer"
+                  style={{ fontFamily: "var(--font-comic)", textShadow: "1px 1px 0 var(--ink)" }}
+                >
+                  💬 Send to WhatsApp
+                </a>
+                <a
+                  href={getGoogleCalendarUrl(data)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="comic-border flex items-center justify-center gap-2 rounded-full bg-[#4285F4] px-6 py-4 font-bold text-white hover:opacity-90 hover:scale-105 active:scale-95 transition-all duration-200 flex-1 cursor-pointer"
+                  style={{ fontFamily: "var(--font-comic)", textShadow: "1px 1px 0 var(--ink)" }}
+                >
+                  📅 Add to Google Calendar
+                </a>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
       </div>
