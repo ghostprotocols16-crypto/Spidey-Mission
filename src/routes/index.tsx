@@ -562,8 +562,17 @@ function RegistrationPage({ onSubmit }: { onSubmit: (d: FormData) => void }) {
 
           <Field label="Mobile Number" error={errors.mobile?.message}>
             <input
-              {...register("mobile", { required: "Spider-Signal needs a phone." })}
-              placeholder="(similar to +91 9881198049)"
+              type="text"
+              inputMode="numeric"
+              maxLength={10}
+              autoComplete="tel"
+              {...register("mobile", {
+                required: "Spider-Signal needs a phone.",
+                setValueAs: (value) => String(value ?? "").replace(/\D/g, "").slice(0, 10),
+                validate: (value) =>
+                  /^\d{10}$/.test(String(value ?? "")) || "Enter exactly 10 digits.",
+              })}
+              placeholder="Enter 10 digits only"
               className="w-full rounded-lg border-2 border-ink bg-cream/80 px-4 py-3 outline-none focus:ring-2 focus:ring-primary"
             />
           </Field>
@@ -664,6 +673,12 @@ const sendEmailFn = createServerFn({ method: "POST" })
     const gmailUser = process.env.GMAIL_USER ?? adminEmail;
     const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
     const userEmail = data.email;
+    const mobile = data.mobile.replace(/\D/g, "");
+
+    if (!/^\d{10}$/.test(mobile)) {
+      return { success: false, error: "Mobile number must be exactly 10 digits." };
+    }
+
     const userSubject = `🕷️ Mission Accepted: ${data.name} joined Brand New Day`;
     const adminSubject = `🕷️ Mission Confirmation: ${data.name} submitted the form`;
 
@@ -681,7 +696,7 @@ const sendEmailFn = createServerFn({ method: "POST" })
             <tr><td style="padding: 6px 0; font-weight: bold;">HOST AGENT:</td><td>Harsh</td></tr>
             <tr><td style="padding: 6px 0; font-weight: bold;">PARTNER AGENT:</td><td>${data.name}</td></tr>
             <tr><td style="padding: 6px 0; font-weight: bold;">RECRUIT EMAIL:</td><td>${data.email}</td></tr>
-            <tr><td style="padding: 6px 0; font-weight: bold;">CONTACT PHONE:</td><td>${data.mobile}</td></tr>
+            <tr><td style="padding: 6px 0; font-weight: bold;">CONTACT PHONE:</td><td>${mobile}</td></tr>
             <tr><td style="padding: 6px 0; font-weight: bold;">MISSION DATE:</td><td>${data.date}</td></tr>
             <tr><td style="padding: 6px 0; font-weight: bold;">SUPPLIES:</td><td>🍿 Compulsory Popcorn</td></tr>
             <tr><td style="padding: 6px 0; font-weight: bold;">POST-MISSION:</td><td>🍝 Pasta / 🍔 Burger / 🍩 Donuts</td></tr>
@@ -740,10 +755,11 @@ const sendEmailFn = createServerFn({ method: "POST" })
 function getWhatsAppUrl(data: FormData) {
   const adminNumber = "919529389244";
   const date = data.day === "Custom Date" ? data.customDate || "TBD" : data.day;
+  const mobile = data.mobile.replace(/\D/g, "");
   const message =
     `🕷️ *MISSION BRIEFING ACCEPTED* 🕸️\n\n` +
     `• *Agent:* ${data.name}\n` +
-    `• *Spider-Phone:* ${data.mobile}\n` +
+    `• *Spider-Phone:* ${mobile}\n` +
     `• *Email:* ${data.email}\n` +
     `• *Preferred Day:* ${date}\n\n` +
     `"A Brand New Day deserves a pretty good teammate." 🍿 Let's suit up, Harsh! 🎬`;
@@ -768,7 +784,7 @@ function getGoogleCalendarUrl(data: FormData) {
       `-------------------\n` +
       `Agent Host: Harsh\n` +
       `Agent Partner: ${data.name}\n` +
-      `Spider-Phone: ${data.mobile}\n` +
+    `Spider-Phone: ${data.mobile.replace(/\D/g, "")}\n` +
       `Email: ${data.email}\n` +
       `Preferred Day: ${data.day === "Custom Date" ? data.customDate : data.day}\n\n` +
       `🍿 Popcorn is compulsory. Sharing is optional!\n` +
